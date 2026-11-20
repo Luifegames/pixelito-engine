@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Pixelito: consola de fantasía</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #14121f;
+        --panel: #1f1c33;
+        --ink: #f3efe6;
+        --mute: #a9a3c0;
+        --acc: #ff4f8b;
+        --acc2: #4fd1ff;
+        --line: #34305a;
+        --body: #d9d3c4;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme="dark"]) {
+          --bg: #f4efe3;
+          --panel: #fffaf0;
+          --ink: #1b1830;
+          --mute: #5d5878;
+          --line: #d8cfb8;
+          --body: #2c2842;
+        }
+      }
+      :root[data-theme="light"] {
+        --bg: #f4efe3;
+        --panel: #fffaf0;
+        --ink: #1b1830;
+        --mute: #5d5878;
+        --line: #d8cfb8;
+        --body: #2c2842;
+      }
+      :root[data-theme="dark"] {
+        --bg: #14121f;
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+        scroll-behavior: smooth;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--body);
+        font: 16px/1.6 system-ui, sans-serif;
+      }
+      .px {
+        font-family: "Press Start 2P", monospace, monospace;
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 0;
+      }
+      nav a {
+        color: var(--mute);
+        text-decoration: none;
+        margin-left: 18px;
+        font-size: 14px;
+      }
+      nav a:hover {
+        color: var(--acc);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .logo {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        width: 30px;
+        gap: 0;
+      }
+      .logo i {
+        aspect-ratio: 1;
+        background: transparent;
+      }
+      .logo i.on {
+        background: var(--acc);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: center;
+        padding: 30px 0 60px;
+      }
+      h1 {
+        font-size: clamp(28px, 6vw, 52px);
+        color: var(--ink);
+        margin: 0 0 18px;
+      }
+      h1 span {
+        color: var(--acc);
+      }
+      .lead {
+        font-size: 18px;
+        color: var(--body);
+        max-width: 30em;
+      }
+      .btn {
+        display: inline-block;
+        background: var(--acc);
+        color: #fff;
+        text-decoration: none;
+        padding: 16px 22px;
+        font-size: 12px;
+        border: 0;
+        box-shadow: 0 6px 0 #a02655;
+        margin: 22px 14px 8px 0;
+        transition: transform 0.08s, box-shadow 0.08s;
+      }
+      .btn:active {
+        transform: translateY(5px);
+        box-shadow: 0 1px 0 #a02655;
+      }
+      .btn.alt {
+        background: var(--acc2);
+        color: #07202b;
+        box-shadow: 0 6px 0 #1f7e9c;
+      }
+      .btn.alt:active {
+        box-shadow: 0 1px 0 #1f7e9c;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--mute);
+      }
+      /* consola 3D */
+      .stage {
+        perspective: 900px;
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
+      }
+      .console {
+        position: relative;
+        width: min(340px, 86vw);
+        aspect-ratio: 3/4;
+        transform-style: preserve-3d;
+        transition: transform 0.12s ease-out;
+      }
+      .face,
+      .back {
+        position: absolute;
+        inset: 0;
+        border-radius: 26px;
+      }
+      .back {
+        background: #0c0a16;
+        transform: translateZ(-26px);
+        box-shadow: 0 40px 60px rgba(0, 0, 0, 0.45);
+      }
+      .mid {
+        position: absolute;
+        inset: 0;
+        border-radius: 26px;
+        background: #2a2547;
+        transform: translateZ(-13px);
+      }
+      .face {
+        background: linear-gradient(160deg, #6d5fd6, #443a9c);
+        border: 3px solid #8d82ee;
+        transform: translateZ(0);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 18px 16px;
+        transform-style: preserve-3d;
+      }
+      .bezel {
+        background: #0e0c1a;
+        padding: 12px;
+        border-radius: 10px;
+        transform: translateZ(8px);
+        width: 100%;
+        border: 3px solid #241f45;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        image-rendering: pixelated;
+        background: #1a1c2c;
+      }
+      .label {
+        color: #cfc8ff;
+        font-size: 8px;
+        margin: 10px 0 0;
+        transform: translateZ(6px);
+        letter-spacing: 1px;
+      }
+      .ctrl {
+        margin-top: auto;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px 10px;
+        transform-style: preserve-3d;
+      }
+      .dpad {
+        position: relative;
+        width: 96px;
+        height: 96px;
+        transform: translateZ(14px);
+        transform-style: preserve-3d;
+      }
+      .dpad button {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        background: #16132b;
+        border: 0;
+        color: #8d82ee;
+        cursor: pointer;
+        font-size: 12px;
+        box-shadow: 0 4px 0 #07060f;
+      }
+      .dpad button:active {
+        transform: translateY(3px);
+        box-shadow: 0 1px 0 #07060f;
+        color: var(--acc2);
+      }
+      .dpad .u {
+        left: 32px;
+        top: 0;
+        border-radius: 6px 6px 0 0;
+      }
+      .dpad .d {
+        left: 32px;
+        top: 64px;
+        border-radius: 0 0 6px 6px;
+      }
+      .dpad .l {
+        left: 0;
+        top: 32px;
+        border-radius: 6px 0 0 6px;
+      }
+      .dpad .r {
+        left: 64px;
+        top: 32px;
+        border-radius: 0 6px 6px 0;
+      }
+      .dpad .c {
+        left: 32px;
+        top: 32px;
+        width: 32px;
+        height: 32px;
+        background: #16132b;
+        position: absolute;
+      }
+      .ab {
+        display: flex;
+        gap: 16px;
+        transform: translateZ(18px);
+        transform-style: preserve-3d;
+        rotate: -18deg;
+      }
+      .ab button {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 0;
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 5px 0 rgba(0, 0, 0, 0.4);
+      }
+      .ab button:active {
+        transform: translateY(4px);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+      }
+      .bx {
+        background: var(--acc);
+      }
+      .bo {
+        background: #3bbf7a;
+      }
+      .ab .bo {
+        margin-top: -14px;
+      }
+      .hint {
+        text-align: center;
+        color: var(--mute);
+        font-size: 13px;
+        margin-top: 6px;
+      }
+      /* secciones */
+      section {
+        padding: 50px 0;
+        border-top: 2px dashed var(--line);
+      }
+      h2 {
+        font-size: clamp(16px, 3vw, 22px);
+        color: var(--ink);
+        margin: 0 0 24px;
+      }
+      h2 b {
+        color: var(--acc2);
+      }
+      .feat {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        padding: 18px;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 11px;
+        color: var(--acc2);
+      }
+      .card p {
+        margin: 0;
+        font-size: 15px;
+      }
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .shot {
+        aspect-ratio: 4/3;
+        background: repeating-conic-gradient(
+            var(--panel) 0 25%,
+            var(--bg) 0 50%
+          )
+          0 0/24px 24px;
+        border: 2px solid var(--line);
+        display: grid;
+        place-items: center;
+        color: var(--mute);
+        font-size: 9px;
+        text-align: center;
+        padding: 10px;
+      }
+      .dl {
+        background: var(--panel);
+        border: 3px solid var(--acc);
+        padding: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .dl ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        color: var(--mute);
+        font-size: 14px;
+      }
+      .soon {
+        display: inline-block;
+        background: var(--line);
+        color: var(--mute);
+        font-size: 9px;
+        padding: 6px 8px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      .docs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+      }
+      .docs div {
+        background: var(--panel);
+        border: 2px dashed var(--line);
+        padding: 16px;
+        color: var(--mute);
+        font-size: 15px;
+      }
+      .don {
+        text-align: center;
+      }
+      .don p {
+        max-width: 34em;
+        margin: 0 auto;
+      }
+      footer {
+        padding: 30px 0 50px;
+        text-align: center;
+        color: var(--mute);
+        font-size: 13px;
+        border-top: 2px dashed var(--line);
+      }
+      @media (max-width: 760px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        nav a {
+          margin-left: 12px;
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <div class="brand px">
+          <img src="logo_p.png" alt="Pixelito" class="logo" id="logo" />
+          PIXELITO
+        </div>
+        <div>
+          <a href="#juegos">Juegos</a><a href="#descargar">Descargar</a
+          ><a href="#docs">Docs</a><a href="#donar">Donar</a>
+        </div>
+      </nav>
+
+      <header class="hero">
+        <div>
+          <h1 class="px">Crea juegos <span>pequeños</span>, en pixeles.</h1>
+          <p class="lead">
+            Pixelito es una consola de fantasía gratuita: programas, dibujas y
+            haces sonar tus juegos en un solo lugar, con una pantalla chiquita y
+            muchas ganas.
+          </p>
+          <a class="btn px" href="#descargar">DESCARGAR</a>
+          <!-- <a class="btn alt px" href="#juegos">VER JUEGOS</a> -->
+          <div class="small">
+            Gratis para Windows · Hecho con C++, SDL y Lua
+          </div>
+        </div>
+        <div>
+          <div class="stage" id="stage">
+            <div class="console" id="con">
+              <div class="back"></div>
+              <div class="mid"></div>
+              <div class="face">
+                <div class="bezel">
+                  <canvas id="scr" width="48" height="40"></canvas>
+                </div>
+                <div class="label px">PIXELITO</div>
+                <div class="ctrl">
+                  <div class="dpad">
+                    <div class="c"></div>
+                    <button class="u" data-k="u" aria-label="Arriba">▲</button
+                    ><button class="l" data-k="l" aria-label="Izquierda">
+                      ◀
+                    </button>
+                    <button class="r" data-k="r" aria-label="Derecha">▶</button
+                    ><button class="d" data-k="d" aria-label="Abajo">▼</button>
+                  </div>
+                  <div class="ab">
+                    <button class="bx px" data-k="x" aria-label="X">X</button
+                    ><button class="bo px" data-k="o" aria-label="O">O</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- <section id="juegos">
+        <h2 class="px">Hecho con <b>Pixelito</b></h2>
+        <div class="shots">
+          <div class="shot px">CAPTURA 1<br />(tu juego aquí)</div>
+          <div class="shot px">CAPTURA 2</div>
+          <div class="shot px">CAPTURA 3</div>
+          <div class="shot px">CAPTURA 4</div>
+        </div>
+      </section> -->
+
+      <section>
+        <h2 class="px">Qué incluye</h2>
+        <div class="feat">
+          <div class="card">
+            <h3 class="px">EDITOR INTEGRADO</h3>
+            <p>Código, sprites y mapas sin salir de la consola.</p>
+          </div>
+          <div class="card">
+            <h3 class="px">SCRIPTING EN LUA</h3>
+            <p>Un lenguaje sencillo para empezar rápido.</p>
+          </div>
+          <div class="card">
+            <h3 class="px">PALETA RETRO</h3>
+            <p>
+              Pantalla pequeña y colores limitados, como en las consolas
+              clásicas.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="px">EXPORTA A PC</h3>
+            <p>Convierte tu juego en un ejecutable para compartirlo.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="descargar">
+        <h2 class="px">
+          Descargar <b>gratis</b><span class="soon px">PRONTO</span>
+        </h2>
+        <div class="dl">
+          <div>
+            <div class="px" style="color: var(--ink); font-size: 13px">
+              Pixelito para Windows
+            </div>
+            <ul>
+              <li>Windows 10 u 11 (64 bits)</li>
+              <li>Versión inicial · archivo .zip</li>
+              <li>
+                Si Windows muestra un aviso de SmartScreen, pulsa “Más
+                información” y “Ejecutar de todas formas”.
+              </li>
+            </ul>
+          </div>
+          <!-- <div>
+            <a
+              class="btn px"
+              style="margin: 0"
+              href="https://github.com/Luifegames/pixelito-engine/releases"
+              target="_blank"
+              rel="noopener"
+              >⬇ DESCARGAR</a
+            >
+          </div> -->
+        </div>
+        <p class="small">
+          Pixelito es gratuito, aunque no es de código abierto. Linux y macOS:
+          más adelante.
+        </p>
+      </section>
+
+      <section id="docs">
+        <h2 class="px">Documentación <span class="soon px">PRONTO</span></h2>
+        <div class="docs">
+          <div>Primeros pasos</div>
+          <div>Referencia de funciones</div>
+          <div>Sprites y mapas</div>
+          <div>Tutoriales</div>
+        </div>
+      </section>
+
+      <section id="donar" class="don">
+        <h2 class="px">Apoya el <b>proyecto</b></h2>
+        <p>
+          Pixelito es gratis y lo desarrollo en mi tiempo libre. Si te gusta y
+          quieres que siga creciendo, puedes ayudarme en Patreon. Tú nombre
+          aparecerá en los créditos.
+        </p>
+        <a
+          class="btn alt px"
+          href="https://www.patreon.com/cw/LuifeGames"
+          target="_blank"
+          rel="noopener"
+          >♥ PATREON</a
+        >
+      </section>
+    </div>
+
+    <footer>
+      Pixelito · hecho por Luis Felipe (Luifegames) ·
+      <a
+        style="color: var(--acc2)"
+        href="https://luife.itch.io"
+        target="_blank"
+        rel="noopener"
+        >itch.io</a
+      >
+    </footer>
+
+    <script>
+      // logo P
+
+      // rotación 3D con el mouse
+      (function () {
+        var con = document.getElementById("con"),
+          st = document.getElementById("stage");
+        function tilt(x, y) {
+          var r = st.getBoundingClientRect(),
+            dx = (x - (r.left + r.width / 2)) / window.innerWidth,
+            dy = (y - (r.top + r.height / 2)) / window.innerHeight;
+          con.style.transform =
+            "rotateY(" +
+            (dx * 50).toFixed(1) +
+            "deg) rotateX(" +
+            (-dy * 40).toFixed(1) +
+            "deg)";
+        }
+        window.addEventListener("pointermove", function (e) {
+          tilt(e.clientX, e.clientY);
+        });
+        con.style.transform = "rotateY(-14deg) rotateX(8deg)";
+      })();
+      // pantalla
+      (function () {
+        var cv = document.getElementById("scr"),
+          c = cv.getContext("2d"),
+          W = 48,
+          H = 40;
+        var cols = ["#ff4f8b", "#4fd1ff", "#ffd84f", "#3bbf7a", "#b48cff"],
+          ci = 0,
+          x = 20,
+          y = 16,
+          t = 0;
+        var P = ["1111", "1001", "1111", "1000", "1000"];
+        function draw() {
+          c.fillStyle = "#1a1c2c";
+          c.fillRect(0, 0, W, H);
+          c.fillStyle = "#262a45";
+          for (var i = 0; i < W; i += 8)
+            for (var j = 0; j < H; j += 8)
+              if (((i + j) / 8) % 2 === 0) c.fillRect(i, j, 8, 8);
+          c.fillStyle = cols[ci];
+          P.forEach(function (r, j) {
+            r.split("").forEach(function (v, i) {
+              if (v === "1")
+                c.fillRect(x + i, y + j + (Math.sin(t / 8) > 0 ? 0 : 0), 1, 1);
+            });
+          });
+          c.fillStyle = "#f3efe6";
+          c.fillRect(2, 2, (t / 4) % 44 | 0, 1);
+          t++;
+        }
+        function key(k) {
+          if (k === "u") y = Math.max(0, y - 2);
+          if (k === "d") y = Math.min(H - 5, y + 2);
+          if (k === "l") x = Math.max(0, x - 2);
+          if (k === "r") x = Math.min(W - 4, x + 2);
+          if (k === "o") ci = (ci + 1) % cols.length;
+          if (k === "x") {
+            x = 20;
+            y = 16;
+            ci = 0;
+          }
+        }
+        document.querySelectorAll("[data-k]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            key(b.dataset.k);
+          });
+        });
+        var map = {
+          ArrowUp: "u",
+          ArrowDown: "d",
+          ArrowLeft: "l",
+          ArrowRight: "r",
+          o: "o",
+          O: "o",
+          x: "x",
+          X: "x",
+        };
+        window.addEventListener("keydown", function (e) {
+          if (map[e.key] && !/INPUT|TEXTAREA/.test(e.target.tagName)) {
+            key(map[e.key]);
+          }
+        });
+        setInterval(draw, 60);
+      })();
+    </script>
+  </body>
+</html>
